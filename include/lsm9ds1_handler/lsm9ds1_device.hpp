@@ -137,7 +137,7 @@ class LSM9DS1_Device
     int bus_index_;
     int fd_accelgyro_;
     int fd_mag_;
-    int calibration_samples_ = 60;
+    int calibration_samples_ = 600;
 
     uint8_t i2c_address_accelgyro_;
     uint8_t accel_scale_;

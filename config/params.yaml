@@ -1,10 +1,10 @@
 lsm9ds1_handler:
   ros__parameters:
-    #/dev/i2c-3
-    i2c_interface: 3
+    #/dev/i2c-1
+    i2c_interface: 1
     
     # telemetry publish rate
-    frequency: 100 # [Hz]
+    frequency: 200 # [Hz]
 
     # default addresses for the lsm9ds1
     i2c_address_accelgyro: 0x6b
@@ -12,10 +12,10 @@ lsm9ds1_handler:
 
     # ask STMicroElectronics why 16 comes before 4..
     # Acceleration scale: 0 -> 2g, 1 -> 16g, 2 -> 4g, 3 -> 8g
-    accel_scale: 0
+    accel_scale: 3
 
     # Accelerometer rate: 0 -> Power Down, 1 -> 10hz, 2 -> 50hz, 3 -> 119hz, 4 -> 238hz, 5 -> 476hz 6 -> 952hz
-    accel_rate: 1
+    accel_rate: 6
 
     # Magnetometer scale: 0 -> 4 gauss, 1 -> 8 gauss, 2 -> 12 gauss, 3 -> 16 gauss
     mag_scale: 3
@@ -27,4 +27,4 @@ lsm9ds1_handler:
     gyro_scale: 3
 
     # Gyro rate: 0 -> Power Down, 1 -> 14.9hz, 2 -> 59.5hz, 3 -> 119hz, 4 -> 238hz, 5 -> 476hz, 6 952hz
-    gyro_rate: 3
+    gyro_rate: 6

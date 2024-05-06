@@ -1,4 +1,5 @@
 #include "lsm9ds1_handler/lsm9ds1_handler.hpp"
+#include <cmath> // For std::isnan
 
 namespace lsm9ds1
 {
@@ -63,6 +64,8 @@ void LSM9DS1::initialize()
     lsm9ds1_device_->configure_gyro(gyro_scale, gyro_rate);
     lsm9ds1_device_->configure_mag(mag_scale, mag_rate, true);
 
+
+
     lsm9ds1_device_->calibrate_accelgyro();
 
     if (frequency == 0)
@@ -70,7 +73,7 @@ void LSM9DS1::initialize()
         throw std::runtime_error("error: frequency cannot be 0\n");
     }
 
-    publisher_ = node_->create_publisher<sensor_msgs::msg::Imu>(imu_name_ + "/telemetry", 10);
+    publisher_ = node_->create_publisher<sensor_msgs::msg::Imu>(imu_name_ + "/imu", 10);
     timer_ = node_->create_wall_timer(std::chrono::milliseconds(1000 / frequency), std::bind(&LSM9DS1::read_IMU, this));
 }
 
@@ -78,20 +81,40 @@ void LSM9DS1::read_IMU()
 {
     IMURecord imu_record = lsm9ds1_device_->read_all();
 
-    // telemetry_msg_.magnetic_field.x = imu_record.raw_magnetic_field.x;
-    // telemetry_msg_.magnetic_field.y = imu_record.raw_magnetic_field.y;
-    // telemetry_msg_.magnetic_field.z = imu_record.raw_magnetic_field.z;
+    // Check for NaN values
+    if (std::isnan(imu_record.raw_linear_acceleration.x) || std::isnan(imu_record.raw_linear_acceleration.y) || std::isnan(imu_record.raw_linear_acceleration.z) ||
+        std::isnan(imu_record.raw_angular_velocity.x) || std::isnan(imu_record.raw_angular_velocity.y) || std::isnan(imu_record.raw_angular_velocity.z)) {
+
+        RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Invalid sensor readings detected. Using previous values.");
+
+        if (lastGoodIMURecord.has_value()) {
+            imu_record = lastGoodIMURecord.value();
+        } else {
+            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "No valid previous sensor readings available.");
+            return; // Skip publishing if no valid data is available
+        }
+    } else {
+        // Update last known good values
+        lastGoodIMURecord = imu_record;
+    }
 
     telemetry_msg_.linear_acceleration.x = imu_record.raw_linear_acceleration.x;
     telemetry_msg_.linear_acceleration.y = imu_record.raw_linear_acceleration.y;
     telemetry_msg_.linear_acceleration.z = imu_record.raw_linear_acceleration.z;
 
-    telemetry_msg_.angular_velocity.x = imu_record.raw_angular_velocity.x;
-    telemetry_msg_.angular_velocity.y = imu_record.raw_angular_velocity.y;
-    telemetry_msg_.angular_velocity.z = imu_record.raw_angular_velocity.z;
+    double deg_to_rad = M_PI / 180.0;
+
+    telemetry_msg_.angular_velocity.x = imu_record.raw_angular_velocity.x * deg_to_rad;
+    telemetry_msg_.angular_velocity.y = imu_record.raw_angular_velocity.y * deg_to_rad;
+    telemetry_msg_.angular_velocity.z = imu_record.raw_angular_velocity.z * deg_to_rad;
+
+     // Set the header stamp and frame_id
+    telemetry_msg_.header.stamp = this->node_->get_clock()->now();
+    telemetry_msg_.header.frame_id = "imu_link";  // Set this to the appropriate frame ID
 
     publish();
 }
+
 
 void LSM9DS1::publish()
 {

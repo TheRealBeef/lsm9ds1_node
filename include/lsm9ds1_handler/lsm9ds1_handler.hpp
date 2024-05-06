@@ -30,6 +30,7 @@ class LSM9DS1
     std::shared_ptr<LSM9DS1_Device> lsm9ds1_device_;
     rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr publisher_;
     rclcpp::TimerBase::SharedPtr timer_;
+    std::optional<IMURecord> lastGoodIMURecord;
 };
 } // namespace lsm9ds1
 
